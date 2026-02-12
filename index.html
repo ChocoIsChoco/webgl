@@ -60,17 +60,6 @@
         // Set current program (WebGL is a state machine!)
         gl.useProgram(program);
 
-        // Draw 1 big point, see shaders
-        // const offset = 0;
-        // const count = 1;
-        // gl.drawArrays(gl.POINTS, offset, count);
-
-
-        // const vertices = new Float32Array([
-        //     0.5,  0.5,
-        //     -0.5,  0.5,
-        //     -0.5, -0.5]); // 2D points: 3 * (x, y) coordinates
-
 
         // 2D points: 3 * (x, y) coordinates
         // (sqrt(3) / 2 - 0.5) * 640 / 480 == 0.4880338..
@@ -84,18 +73,9 @@
         // set current VBO (WebGL is a state machine!)
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
-        // const vbo = gl.createBuffer(); // create Vertex Buffer Object (VBO) id
-        // Set current VBO: bind 'vbo' to the ARRAY_BUFFER bind point,
-        //  a global variable internal to WebGL (state machine!)
-        // gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-        // UPLOAD current VBO to GPU, where it will be processed by the shaders
-        // NOTE: STATIC_DRAW: optimization hint for WebGL: our data won't change
-        // gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
         // UPLOAD vertexBuffer VBO to GPU,
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-
-        // ** NEW **
 
          // RGB colors: 3 * (r, g, b, a) values
         const colors = new Float32Array([   1., 0., 0., 1.,
@@ -110,21 +90,6 @@
         // UPLOAD colorBuffer VBO to GPU,
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
 
-        function checkShaders(gl, vs, fs, program) {
-            if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS))
-                console.error(gl.getShaderInfoLog(vs));
-
-            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS))
-                console.error(gl.getShaderInfoLog(fs));
-
-            if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-                console.error(gl.getProgramInfoLog(program));
-        }
-
-        // Retrieve 'u_color' shader UNIFORM variable as an id
-        const u_colorLoc = gl.getUniformLocation(program, 'u_color');
-
-
         // Retrieve 'a_color' shader ATTRIBUTE variable as an id
         const a_colorLoc = gl.getAttribLocation(program, 'a_color');
 
@@ -137,27 +102,6 @@
         gl.useProgram(program); // Set current program (pair of shaders)
 
 
-        // V1
-        //
-        // // Set the color (constant triangle color, see shader)
-        // gl.uniform4fv(u_colorLoc, [1.0, 0.0, 0.0, 1.0]);
-        // // Tell WebGL how to take data from the VBO
-        // // and supply it to the attribute in the shader.
-        // gl.enableVertexAttribArray(a_positionLoc); // Turn the attribute on
-        // gl.bindBuffer(gl.ARRAY_BUFFER, vbo); // set current vbo
-        // // Tell the attribute how to get data out of positionBuffer
-        // // (ARRAY_BUFFER)
-        // const size = 2; // 2 components per iteration
-        // const type = gl.FLOAT; // the data is 32bit floats
-        // const normalize = false; // don't normalize the data
-        // // stride: 0 = move forward size * sizeof(type) each iteration
-        // // to get the next position
-        // const stride = 0;
-        // const offset = 0; // start at the beginning of the buffer
-        // gl.vertexAttribPointer(a_positionLoc, size, type, normalize, stride, offset);
-
-
-        // V2
         {
             // Turn the attribute on
             gl.enableVertexAttribArray(a_positionLoc);
