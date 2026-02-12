@@ -1,157 +1,41 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset='utf-8'>
-</head>
-<body>
-    <canvas width='640' height='480'></canvas>
-    <script>
-        const canvas = document.querySelector('canvas');
-        /** @type {WebGLRenderingContext} */
-        const gl = canvas.getContext('webgl'); // instead of '2d'
-        gl.clearColor(1., 0., 0., 1.); // RGBA: opaque red
-        gl.clear(gl.COLOR_BUFFER_BIT); // uses current color (state machine)
-        // vertex shader
-        const vs_source = `
-        attribute vec2 a_position; // IN, from buffer: 2D point
-        attribute vec4 a_color; // IN, from buffer: RGB color
-
-        varying vec4 v_color; // OUT, to fragment shader
-
-        void main() {
-            v_color = a_color; // color passthrough, sent to fragment shader (interpolated)
-
-            gl_Position = vec4(a_position, 0.0, 1.0); // used by the fragment shader
-        }`;
-
-        // fragment shader
-        const fs_source = `
-         precision mediump float; // float accuracy: lowp, mediump, highp
-
-        varying vec4 v_color; // IN, INTERPOLATED color from vertex shader
-
-        void main() {
-            gl_FragColor = vec4(v_color); // final framebuffer color: RGBA
-        } `;
-
-        function buildShader(gl, shaderSource, shaderType) {
-            const shader = gl.createShader(shaderType); // Create the shader object
-            gl.shaderSource(shader, shaderSource); // Load the shader source
-            gl.compileShader(shader); // Compile the shader
-            return shader;
+  <head>
+    <title>Basic Three.js App</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0examples/jsm/"
         }
-
-        function createProgram(gl, shaders) {
-            const program = gl.createProgram();
-            shaders.forEach(function(shader) {
-                gl.attachShader(program, shader);
-            });
-            gl.linkProgram(program);
-            return program;
-        }
-
-        // load and compile the shaders
-        const vs = buildShader(gl, vs_source, gl.VERTEX_SHADER);
-        const fs = buildShader(gl, fs_source, gl.FRAGMENT_SHADER);
-
-        // Create program on the GPU!
-        const program = createProgram(gl, [vs, fs]);
-
-        // Set current program (WebGL is a state machine!)
-        gl.useProgram(program);
-
-
-        // 2D points: 3 * (x, y) coordinates
-        // (sqrt(3) / 2 - 0.5) * 640 / 480 == 0.4880338..
-        const vertices = new Float32Array([-0.75,  -0.5,
-                                            0.75,  -0.5,
-                                            0., 0.49]);
-
-        // create Vertex Buffer Object (VBO) id
-        const vertexBuffer = gl.createBuffer();
-
-        // set current VBO (WebGL is a state machine!)
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-
-        // UPLOAD vertexBuffer VBO to GPU,
-        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-
-         // RGB colors: 3 * (r, g, b, a) values
-        const colors = new Float32Array([   1., 0., 0., 1.,
-                                            0., 1., 0., 1.,
-                                            0., 0., 1., 1.]);
-        // create Vertex Buffer Object (VBO) id
-        const colorBuffer = gl.createBuffer();
-
-         // set current VBO (WebGL is a state machine!)
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-
-        // UPLOAD colorBuffer VBO to GPU,
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-
-        // Retrieve 'a_color' shader ATTRIBUTE variable as an id
-        const a_colorLoc = gl.getAttribLocation(program, 'a_color');
-
-        // Retrieve 'a_position' shader ATTRIBUTE variable as an id
-        const a_positionLoc = gl.getAttribLocation(program, 'a_position');
-
-        gl.clearColor(0., 0., 0., 1.); // Set current clear color (black)
-        gl.clear(gl.COLOR_BUFFER_BIT); // Clear the canvas to current color
-
-        gl.useProgram(program); // Set current program (pair of shaders)
-
-
-        {
-            // Turn the attribute on
-            gl.enableVertexAttribArray(a_positionLoc);
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer); // set current vbo
-            // Tell the attribute how to get data out of positionBuffer
-            // (ARRAY_BUFFER)
-            const size = 2; // 2 components per iteration
-            const type = gl.FLOAT; // the data is 32bit floats
-            const normalize = false; // don't normalize the data
-            // stride: 0 = move forward size * sizeof(type) each iteration
-            // to get the next position
-            const stride = 0;
-            const offset = 0; // start at the beginning of the buffer
-            gl.vertexAttribPointer(a_positionLoc, size, type, normalize, stride, offset);
-        }
-
-
-        {
-            // Tell WebGL how to take data from the VBO
-            // and supply it to the attribute in the shader.
-            gl.enableVertexAttribArray(a_colorLoc); // Turn the attribute on
-            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-            // Tell the color attribute how to get data out of colorBuffer (ARRAY_BUFFER)
-            const size = 4; // NOTE: 4 components per iteration
-            const type = gl.FLOAT; // the data is 32bit floats
-            const normalize = false; // don't normalize the data
-            // stride: 0 = move forward size * sizeof(type) each iteration
-            // to get the next position
-            const stride = 0;
-            const offset = 0; // start at the beginning of the buffer
-            gl.vertexAttribPointer( a_colorLoc, size, type, normalize, stride, offset);
-        }
-
-
-        // primitiveType == gl.TRIANGLES:
-        // each time our vertex shader is run 3 times,
-        // WebGL will draw a triangle
-        // based on the 3 values we set gl_Position to (see shader)
-        const primitiveType = gl.TRIANGLES;
-
-        // Start index of the first vertex
-        // Must be a valid multiple of the size of the given type.
-        const startIndex = 0;
-
-        // Execute our vertex shader 3 times,
-        // using 2 elements from the array (see size 2 above)
-        // setting a_position.x and a_position.y
-        const count = 3;
-        gl.drawArrays(primitiveType, startIndex, count);
-
+      }
     </script>
-</body>
+    <script type="module">
+    import * as THREE from "three";
+    var scene = new THREE.Scene();
+    var aspect = window.innerWidth / window.innerHeight;
+    var camera = new THREE.PerspectiveCamera( 75, aspect, 0.1, 1000 );
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+
+    var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+    var material = new THREE.MeshNormalMaterial();
+    var cube = new THREE.Mesh( geometry, material );
+    scene.add( cube );
+    camera.position.z = 5;
+
+    function animate() {
+      cube.rotation.x += 0.1;
+      cube.rotation.y += 0.1;
+      renderer.render( scene, camera );
+    }
+
+    renderer.setAnimationLoop( animate );
+    </script>
+  </body>
 </html>
